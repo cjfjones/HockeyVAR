@@ -4,7 +4,6 @@ import glob
 import time
 import utils
 import tkinter as tk
-from PIL import ImageTk, Image
 
 class HockeyVideo:
     def __init__(self, root, path, frameJump=1):
@@ -15,6 +14,7 @@ class HockeyVideo:
         utils.tempClassifyFramesRand()
         self.frames = glob.glob('footage/*')
         self.frames.sort(key=utils.extractNum)
+        self.speed = 1
 
     def separateFrames(self):
         files = glob.glob('footage/*')
@@ -49,9 +49,7 @@ class HockeyVideo:
 
     def displayImageInFrame(self, frameName, width, height, row, column):
         gridFrame = tk.Frame(self.root, bg='green' if utils.extractNum(frameName, 2) == 0 else 'red')
-        frameImg = Image.open(frameName)
-        frameImg = frameImg.resize((width, height))
-        frameImg = ImageTk.PhotoImage(frameImg)
+        frameImg = utils.openImageResize(frameName, (width, height))
         imgLabel = tk.Label(gridFrame, image=frameImg)
         imgLabel.image = frameImg
         imgLabel.grid(row=0, column=0, padx=5, pady=5)
