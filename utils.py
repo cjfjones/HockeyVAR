@@ -14,8 +14,11 @@ def openImageResize(path, size):
     image = ImageTk.PhotoImage(image)
     return image
 
-def extractNum(e, index=0):
-    return int(re.findall('\d+', e)[index])
+def extractFrameNum(e):
+    return int(re.findall('\d+', e)[0])
+
+def extractConfidenceVal(e):
+    return int(re.findall('\d+', e)[1])
 
 def classifyFrames():
     model = loadModel()
@@ -37,7 +40,7 @@ def loadModel():
 
 def tempClassifyFramesRand():
     for imagePath in glob.glob('footage/*'):
-        if random.random() < 0.0001:
+        if random.random() < 0:
             os.rename(imagePath, imagePath.replace('predval', '1'))
         else:
             os.rename(imagePath, imagePath.replace('predval', '0'))
