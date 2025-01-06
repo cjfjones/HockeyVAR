@@ -12,7 +12,7 @@ class hockeyTkinterWindow:
 
     def createWindow(self):
         self.root = tk.Tk()
-        self.root.minsize(150, 100)
+        self.root.minsize(250, 300)
 
         self.submitVideoButton = tk.Button(self.root, text='Submit File', command=self.submitVideo,
                                       activebackground='blue', activeforeground='white')
@@ -60,12 +60,20 @@ class hockeyTkinterWindow:
         self.challengeButton.grid(row=0, column=6, padx=5, pady=2)
 
     def submitVideo(self):
+        try:
+            self.video.videoEnded = True
+        except:
+            print('no video')
+        submitVideoThread = threading.Thread(target=self.processVideo)
+        submitVideoThread.start()
+
+    def processVideo(self):
         frameJump = 3
         filename = fd.askopenfilename()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump)
         # classifyFrames() # todo: test when model not corrupted
-        t = threading.Thread(target=self.video.displayFrames)
-        t.start()
+        displayThread = threading.Thread(target=self.video.displayFrames)
+        displayThread.start()
         self.createButtonsWidget()
 
     def normalSpeed(self):
@@ -77,22 +85,22 @@ class hockeyTkinterWindow:
         self.video.nextFrameDisplayTime = time.time()
 
     def pauseVideo(self):
-        self.video.speed = 0
+        self.video.isPaused = True
 
     def playVideo(self):
-        self.video.speed = 1
+        self.video.isPaused = False
         self.video.nextFrameDisplayTime = time.time()
 
     def reverseFrame(self):
+        self.pauseVideo()
         if self.video.frameNum - self.video.frameJump >= 0:
             self.video.frameNum -= self.video.frameJump
-        print(self.video.frameNum)
         self.video.nextFrameDisplayTime = time.time()
 
     def forwardFrame(self):
+        self.pauseVideo()
         if self.video.frameNum + self.video.frameJump <= self.video.lastFrame:
             self.video.frameNum += self.video.frameJump
-        print(self.video.frameNum)
         self.video.nextFrameDisplayTime = time.time()
 
     def challenge(self):

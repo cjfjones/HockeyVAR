@@ -15,10 +15,10 @@ def openImageResize(path, size):
     return image
 
 def extractFrameNum(e):
-    return int(re.findall('\d+', e)[0])
+    return int(re.findall('\d+', e)[0])  # Used for finding the frame number from a path
 
 def extractConfidenceVal(e):
-    return int(re.findall('\d+', e)[1])
+    return int(re.findall('\d+', e)[1])  # Used for finding the frame confidence from a path
 
 def classifyFrames():
     model = loadModel()
