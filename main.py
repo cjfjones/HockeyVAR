@@ -32,4 +32,60 @@ cursor.execute('''
                 successful_challenges INTEGER
             );''')
 
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Clubs
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL
+            );''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS People
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                first_name TEXT NOT NULL,
+                last_name TEXT,
+                date_of_birth DATE,
+                team INTEGER REFERENCES Teams(ID),
+                is_umpire BOOLEAN
+            );''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Player_Appearances
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                match INTEGER REFERENCES Matches(ID),
+                player INTEGER REFERENCES People(ID)
+            );''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Clips
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                file_name TEXT,
+                match INTEGER REFERENCES Matches(ID),
+                time_from_start DATETIME,
+                length DECIMAL
+            );''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Frames
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                frame_num INTEGER NOT NULL,
+                confidence DECIMAL,
+                challenge BOOLEAN,
+                clip INTEGER REFERENCES Clips(ID),
+                is_foot BOOLEAN NOT NULL
+            );''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Challenges
+            (
+                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                frame_id INTEGER REFERENCES Frames(ID),
+                challenger INTEGER REFERENCES People(ID),
+                challenge_correct BOOLEAN
+            );''')
+
 conn.commit()
