@@ -1,8 +1,6 @@
 import windowClass
 import sqlite3
 
-window = windowClass.hockeyTkinterWindow()
-
 conn = sqlite3.connect('hockey_video.db')
 cursor = conn.cursor()
 
@@ -47,7 +45,8 @@ cursor.execute('''
                 last_name TEXT,
                 date_of_birth DATE,
                 team INTEGER REFERENCES Teams(ID),
-                is_umpire BOOLEAN
+                is_umpire BOOLEAN,
+                password TEXT NOT NULL
             );''')
 
 cursor.execute('''
@@ -87,5 +86,21 @@ cursor.execute('''
                 challenger INTEGER REFERENCES People(ID),
                 challenge_correct BOOLEAN
             );''')
+
+#cursor.execute('''INSERT INTO Clubs (name) VALUES (?)''', ('HailshamHC',))
+#cursor.execute('''INSERT INTO people (first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?);''', ('Fin', 'Jones', '05/09/2006', 1, False, '1234'))
+
+
+cursor.execute('''SELECT * FROM Clubs;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+cursor.execute('''SELECT * FROM People;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+window = windowClass.loginPage()
 
 conn.commit()

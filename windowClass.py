@@ -5,19 +5,52 @@ from tkinter import filedialog as fd
 import threading
 import time
 
-class hockeyTkinterWindow:
+class loginPage:
     def __init__(self):
-        self.video = None
         self.createWindow()
 
     def createWindow(self):
         self.root = tk.Tk()
         self.root.minsize(250, 300)
 
+        self.loginLabel = tk.Label(self.root, text='Login')
+        self.loginLabel.grid(row=0, column=0, pady=2, sticky='nsew')
+
+        self.hockeyWindowButton = tk.Button(self.root, text='login', command=self.openHockeyWindow)
+        self.hockeyWindowButton.grid(row=1, column=1, pady=2, sticky='nsew')
+
+        self.root.mainloop()
+
+    def openHockeyWindow(self):
+        self.clearLoginWindow()
+        hockeyTkinterWindow(root=self.root)
+
+    def clearLoginWindow(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+
+class hockeyTkinterWindow:
+    def __init__(self, root=None):
+        self.frameControlFlag = 0  # -1 for rewinding, 1 for forwarding, 0 for all else
+        self.video = None
+        if root != None:
+            self.createWindow(root=root)
+        else:
+            self.createWindow()
+
+    def createWindow(self, root=None):
+        if root == None:
+            self.root = tk.Tk()
+        else:
+            self.root = root
+        self.root.minsize(250, 300)
+
         self.submitVideoButton = tk.Button(self.root, text='Submit File', command=self.submitVideo,
-                                      activebackground='blue', activeforeground='white')
+                                           activebackground='blue', activeforeground='white')
         self.submitVideoButton.grid(row=0, column=0, pady=2)
 
+        self.root.after(500, self.frameControlLoop)
         self.root.mainloop()
 
     def createButtonsWidget(self):
@@ -25,39 +58,58 @@ class hockeyTkinterWindow:
         self.buttonFrame.grid(row=3, column=0, columnspan=6, sticky='nsew')
 
         self.reverseImage = utils.openImageResize('buttonImages/back.png', (20, 20))
-        self.reverseButton = tk.Button(self.buttonFrame, image=self.reverseImage, command=self.reverseFrame, activebackground='blue',
-                                  activeforeground='white')
+        self.reverseButton = tk.Button(self.buttonFrame, image=self.reverseImage, activebackground='blue',
+                                       activeforeground='white')
+        self.reverseButton.bind('<ButtonPress-1>', self.reverseFrame)
+        self.reverseButton.bind('<ButtonRelease-1>', self.stopFrameControl)
         self.reverseButton.grid(row=0, column=0, padx=5, pady=2)
 
         self.playImage = utils.openImageResize('buttonImages/play.png', (20, 20))
         self.playButton = tk.Button(self.buttonFrame, image=self.playImage, command=self.playVideo, activebackground='blue',
-                               activeforeground='white')
+                                    activeforeground='white')
         self.playButton.grid(row=0, column=1, padx=5, pady=2)
 
         self.pauseImage = utils.openImageResize('buttonImages/pause.png', (20, 20))
         self.pauseButton = tk.Button(self.buttonFrame, image=self.pauseImage, command=self.pauseVideo, activebackground='blue',
-                                activeforeground='white')
+                                     activeforeground='white')
         self.pauseButton.grid(row=0, column=2, padx=5, pady=2)
 
         self.forwardImage = utils.openImageResize('buttonImages/forward.png', (20, 20))
-        self.forwardButton = tk.Button(self.buttonFrame, image=self.forwardImage, command=self.forwardFrame, activebackground='blue',
-                                  activeforeground='white')
+        self.forwardButton = tk.Button(self.buttonFrame, image=self.forwardImage, activebackground='blue',
+                                       activeforeground='white')
+        self.forwardButton.bind('<ButtonPress-1>', self.forwardFrame)
+        self.forwardButton.bind('<ButtonRelease-1>', self.stopFrameControl)
         self.forwardButton.grid(row=0, column=3, padx=5, pady=2)
 
         self.slowImage = utils.openImageResize('buttonImages/halfspeed.png', (20, 20))
         self.slowButton = tk.Button(self.buttonFrame, image=self.slowImage, command=self.halfSpeed, activebackground='blue',
-                               activeforeground='white')
+                                    activeforeground='white')
         self.slowButton.grid(row=0, column=4, padx=5, pady=2)
 
         self.normalImage = utils.openImageResize('buttonImages/normalspeed.png', (20, 20))
         self.normalButton = tk.Button(self.buttonFrame, image=self.normalImage, command=self.normalSpeed, activebackground='blue',
-                                 activeforeground='white')
+                                      activeforeground='white')
         self.normalButton.grid(row=0, column=5, padx=5, pady=2)
 
         self.challengeImage = utils.openImageResize('buttonImages/challenge.png', (20, 20))
         self.challengeButton = tk.Button(self.buttonFrame, image=self.challengeImage, command=self.challenge, activebackground='blue',
-                                    activeforeground='white')
+                                         activeforeground='white')
         self.challengeButton.grid(row=0, column=6, padx=5, pady=2)
+
+    def frameControlLoop(self):
+        if self.frameControlFlag != 0:
+            if self.frameControlFlag == 1 and self.video.frameNum + self.video.frameJump <= self.video.lastFrame:
+                self.video.frameNum += self.video.frameJump
+
+            if self.frameControlFlag == -1 and self.video.frameNum - self.video.frameJump >= 0:
+                self.video.frameNum -= self.video.frameJump
+
+            self.video.nextFrameDisplayTime = time.time()
+
+        try:
+            self.root.after(self.video.frameJump*200, self.frameControlLoop)
+        except:
+            self.root.after(200, self.frameControlLoop)
 
     def submitVideo(self):
         try:
@@ -68,7 +120,7 @@ class hockeyTkinterWindow:
         submitVideoThread.start()
 
     def processVideo(self):
-        frameJump = 3
+        frameJump = 1
         filename = fd.askopenfilename()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump)
         # classifyFrames() # todo: test when model not corrupted
@@ -91,17 +143,20 @@ class hockeyTkinterWindow:
         self.video.isPaused = False
         self.video.nextFrameDisplayTime = time.time()
 
-    def reverseFrame(self):
+    def reverseFrame(self, event):
         self.pauseVideo()
+        self.frameControlFlag = -1
         if self.video.frameNum - self.video.frameJump >= 0:
             self.video.frameNum -= self.video.frameJump
-        self.video.nextFrameDisplayTime = time.time()
 
-    def forwardFrame(self):
+    def forwardFrame(self, event):
         self.pauseVideo()
+        self.frameControlFlag = 1
         if self.video.frameNum + self.video.frameJump <= self.video.lastFrame:
             self.video.frameNum += self.video.frameJump
-        self.video.nextFrameDisplayTime = time.time()
+
+    def stopFrameControl(self, event):
+        self.frameControlFlag = 0
 
     def challenge(self):
         pass
