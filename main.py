@@ -34,7 +34,7 @@ cursor.execute('''
             CREATE TABLE IF NOT EXISTS Clubs
             (
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL
+                name TEXT NOT NULL UNIQUE
             );''')
 
 cursor.execute('''
@@ -92,6 +92,11 @@ cursor.execute('''
 
 
 cursor.execute('''SELECT * FROM Clubs;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+cursor.execute('''SELECT * FROM Teams;''')
 rows = cursor.fetchall()
 for row in rows:
     print(row)

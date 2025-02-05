@@ -1,4 +1,6 @@
 import tkinter as tk
+from tkinter import ttk
+from tkcalendar import DateEntry
 import utils
 import videoClass
 from tkinter import filedialog as fd
@@ -12,38 +14,90 @@ class loginPage:
         self.conn = conn
         self.cursor = cursor
         self.club = tk.StringVar()
+        self.club.set('-- Select Your Club --')
+        self.team = tk.StringVar()
+        self.team.set('-- Select Your Team --')
         self.fName = tk.StringVar()
         self.lName = tk.StringVar()
+        self.dob = tk.StringVar()
+        self.isUmpire = tk.BooleanVar()
         self.password = tk.StringVar()
+        self.club.trace_add('write', self.onClubChange)
         self.createWindow()
 
     def createWindow(self):
-        self.loginLabel = tk.Label(self.root, text='Sign Up')
-        self.loginLabel.grid(row=0, column=0, columnspan=2, pady=2, sticky='nsew')
+        self.loginButton = tk.Button(self.root, text='Log In', command=self.showLoginFields)
+        self.loginButton.grid(row=0, column=0, pady=2, sticky='nsew')
 
-        self.cursor.execute('''SELECT * FROM Clubs;''')
-        clubs = self.cursor.fetchall()
-
-        self.clubDropDown = tk.OptionMenu(self.root, self.club, *clubs)
-        self.clubDropDown.grid(row=1, column=1, columnspan=2, pady=2, sticky='nsew')
-
-        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
-        self.fNameEntry.grid(row=2, column=1, columnspan=2, pady=2, sticky='nsew')
-
-        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
-        self.lNameEntry.grid(row=3, column=1, columnspan=2, pady=2, sticky='nsew')
-
-        self.passwordEntry = tk.Entry(self.root, textvariable=self.password, show='*')
-        self.passwordEntry.grid(row=4, column=1, columnspan=2, pady=2, sticky='nsew')
-
-        self.hockeyWindowButton = tk.Button(self.root, text='login', command=self.submitLogin)
-        self.hockeyWindowButton.grid(row=5, column=1, columnspan=2, pady=2, sticky='nsew')
+        self.signUpButton = tk.Button(self.root, text='Sign Up', command=self.showSignUpFields)
+        self.signUpButton.grid(row=0, column=1, pady=2, sticky='nsew')
 
         self.root.mainloop()
 
-    def submitLogin(self):
+    def showLoginFields(self):
+        pass
+
+    def showSignUpFields(self):
         self.clearLoginWindow()
-        self.openHockeyWindow()
+
+        # TODO: Add Entry Labels
+
+        self.signUpLabel = tk.Label(self.root, text='Sign Up')
+        self.signUpLabel.grid(row=0, column=0, pady=2, sticky='nsew')
+
+        self.cursor.execute('''SELECT name FROM Clubs;''')
+        clubs = self.cursor.fetchall()
+
+        self.clubDropDown = ttk.Combobox(self.root, textvariable=self.club, values=[club[0] for club in clubs])
+        self.clubDropDown.grid(row=1, column=0, pady=2, sticky='nsew')
+
+        self.cursor.execute('''SELECT name FROM Teams;''')
+        teams = self.cursor.fetchall()
+
+        self.teamDropDown = ttk.Combobox(self.root, textvariable=self.team, values=[team[0] for team in teams])
+        self.teamDropDown.grid(row=2, column=0, pady=2, sticky='nsew')
+
+        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
+        self.fNameEntry.grid(row=3, column=0, pady=2, sticky='nsew')
+
+        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
+        self.lNameEntry.grid(row=4, column=0, pady=2, sticky='nsew')
+        
+        self.dobEntry = DateEntry(self.root, textvariable=self.dob)
+        self.dobEntry.grid(row=5, column=0, pady=2, sticky='nsew')
+
+        self.umpireEntry = tk.Checkbutton(self.root, variable=self.isUmpire)
+        self.umpireEntry.grid(row=6, column=0, pady=2, sticky='nsew')
+
+        self.passwordEntry = tk.Entry(self.root, textvariable=self.password, show='*')
+        self.passwordEntry.grid(row=7, column=0, pady=2, sticky='nsew')
+
+        self.hockeyWindowButton = tk.Button(self.root, text='login', command=self.submitLogin)
+        self.hockeyWindowButton.grid(row=8, column=0, pady=2, sticky='nsew')
+
+    def submitLogin(self):
+        if self.fName.get() != '' and self.lName.get() != '' and self.password.get() != '' and self.club.get() != '' and self.club.get() != '-- Select Your Club --':
+            self.clearLoginWindow()
+            self.openHockeyWindow()
+
+            self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.club.get(),))
+            self.cursor.execute('''SELECT ID FROM Clubs WHERE name = ?;''', (self.club.get(),))
+            self.cursor.execute('''INSERT OR IGNORE INTO Teams (club_id, name, challenges, successful_challenges) VALUES (?, ?, ?, ?);''', (self.cursor.fetchone()[0], self.team.get(), 0, 0))
+            self.cursor.execute('''SELECT ID FROM Teams WHERE name = ?;''', (self.team.get(),))
+            self.cursor.execute('''INSERT INTO people (first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?);''', (self.fName.get(), self.lName.get(), self.dob.get(), self.cursor.fetchone()[0], self.isUmpire.get(), self.password.get()))
+        else:
+            self.badDetails = tk.Label(self.root, text='Your details are not formatted correctly. Make sure each field has a value and your club is selected from the drop down.', fg='red')
+            self.badDetails.grid(row=9, column=0, pady=2, sticky='nsew')
+
+    def onClubChange(self, *args):
+        self.cursor.execute('''SELECT ID FROM Clubs WHERE name LIKE ?''', (self.club.get()+'%',))
+        clubs = self.cursor.fetchall()
+        teams = []
+        if clubs != []:
+            placeholders = ', '.join('?' for club in clubs)
+            self.cursor.execute(f'''SELECT name FROM Teams WHERE club_id IN ({placeholders});''', [club[0] for club in clubs])
+            teams = self.cursor.fetchall()
+        self.teamDropDown['values'] = [team[0] for team in teams]
 
     def openHockeyWindow(self):
         hockeyTkinterWindow(root=self.root)
