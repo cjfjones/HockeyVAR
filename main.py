@@ -101,6 +101,6 @@ rows = cursor.fetchall()
 for row in rows:
     print(row)
 
-window = windowClass.loginPage()
+window = windowClass.loginPage(conn, cursor)
 
 conn.commit()

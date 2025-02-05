@@ -6,23 +6,46 @@ import threading
 import time
 
 class loginPage:
-    def __init__(self):
+    def __init__(self, conn, cursor):
+        self.root = tk.Tk()
+        self.root.minsize(250, 300)
+        self.conn = conn
+        self.cursor = cursor
+        self.club = tk.StringVar()
+        self.fName = tk.StringVar()
+        self.lName = tk.StringVar()
+        self.password = tk.StringVar()
         self.createWindow()
 
     def createWindow(self):
-        self.root = tk.Tk()
-        self.root.minsize(250, 300)
+        self.loginLabel = tk.Label(self.root, text='Sign Up')
+        self.loginLabel.grid(row=0, column=0, columnspan=2, pady=2, sticky='nsew')
 
-        self.loginLabel = tk.Label(self.root, text='Login')
-        self.loginLabel.grid(row=0, column=0, pady=2, sticky='nsew')
+        self.cursor.execute('''SELECT * FROM Clubs;''')
+        clubs = self.cursor.fetchall()
 
-        self.hockeyWindowButton = tk.Button(self.root, text='login', command=self.openHockeyWindow)
-        self.hockeyWindowButton.grid(row=1, column=1, pady=2, sticky='nsew')
+        self.clubDropDown = tk.OptionMenu(self.root, self.club, *clubs)
+        self.clubDropDown.grid(row=1, column=1, columnspan=2, pady=2, sticky='nsew')
+
+        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
+        self.fNameEntry.grid(row=2, column=1, columnspan=2, pady=2, sticky='nsew')
+
+        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
+        self.lNameEntry.grid(row=3, column=1, columnspan=2, pady=2, sticky='nsew')
+
+        self.passwordEntry = tk.Entry(self.root, textvariable=self.password, show='*')
+        self.passwordEntry.grid(row=4, column=1, columnspan=2, pady=2, sticky='nsew')
+
+        self.hockeyWindowButton = tk.Button(self.root, text='login', command=self.submitLogin)
+        self.hockeyWindowButton.grid(row=5, column=1, columnspan=2, pady=2, sticky='nsew')
 
         self.root.mainloop()
 
-    def openHockeyWindow(self):
+    def submitLogin(self):
         self.clearLoginWindow()
+        self.openHockeyWindow()
+
+    def openHockeyWindow(self):
         hockeyTkinterWindow(root=self.root)
 
     def clearLoginWindow(self):
@@ -51,7 +74,6 @@ class hockeyTkinterWindow:
         self.submitVideoButton.grid(row=0, column=0, pady=2)
 
         self.root.after(500, self.frameControlLoop)
-        self.root.mainloop()
 
     def createButtonsWidget(self):
         self.buttonFrame = tk.Frame(self.root, bg='grey')
@@ -120,7 +142,7 @@ class hockeyTkinterWindow:
         submitVideoThread.start()
 
     def processVideo(self):
-        frameJump = 1
+        frameJump = 3
         filename = fd.askopenfilename()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump)
         # classifyFrames() # todo: test when model not corrupted
