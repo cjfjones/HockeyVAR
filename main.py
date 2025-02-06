@@ -41,6 +41,7 @@ cursor.execute('''
             CREATE TABLE IF NOT EXISTS People
             (
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
                 first_name TEXT NOT NULL,
                 last_name TEXT,
                 date_of_birth DATE,

@@ -10,6 +10,9 @@ class HockeyVideo:
         self.root = root  # Tkinter window
         self.path = path  # Video path
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
+        self.mouseX = 0
+        self.mouseY = 0
+        self.frame.bind('<Motion>', self.getMousePos)
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
         self.separateFrames()  # Turns the video into a sequence of frames
@@ -79,3 +82,8 @@ class HockeyVideo:
     def dumpFrame(self):
         self.frame.destroy()  # Removes pointless frames
         self.frame = tk.Frame(self.root)
+
+    def getMousePos(self, event):
+        self.mouseX = event.x
+        self.mouseY = event.y
+        print(self.mouseX, self.mouseY)
