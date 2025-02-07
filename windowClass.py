@@ -258,6 +258,7 @@ class hockeyTkinterWindow:
         filename = fd.askopenfilename()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump)
         # classifyFrames() # todo: test when model not corrupted
+        utils.tempClassifyFramesRand()
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
         self.createButtonsWidget()

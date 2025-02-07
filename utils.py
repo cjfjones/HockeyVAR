@@ -40,7 +40,7 @@ def loadModel():
 
 def tempClassifyFramesRand():
     for imagePath in glob.glob('footage/*'):
-        if random.random() < 0:
+        if '75' in imagePath:
             os.rename(imagePath, imagePath.replace('predval', '1'))
         else:
             os.rename(imagePath, imagePath.replace('predval', '0'))
