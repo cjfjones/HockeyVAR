@@ -4,8 +4,6 @@ import sqlite3
 conn = sqlite3.connect('hockey_video.db')
 cursor = conn.cursor()
 
-# todo: references
-
 cursor.execute('''
             CREATE TABLE IF NOT EXISTS Matches
             (

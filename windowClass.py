@@ -173,6 +173,9 @@ class hockeyTkinterWindow:
         else:
             self.root = root
 
+        self.mouseX = 0
+        self.mouseY = 0
+
         self.submitVideoButton = tk.Button(self.root, text='Submit File', command=self.submitVideo,
                                            activebackground='blue', activeforeground='white')
         self.submitVideoButton.grid(row=0, column=0, pady=2)
@@ -258,6 +261,11 @@ class hockeyTkinterWindow:
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
         self.createButtonsWidget()
+
+    def getMousePos(self, event):
+        self.mouseX = event.x
+        self.mouseY = event.y
+        print(self.mouseX, self.mouseY)
 
     def normalSpeed(self):
         self.video.speed = 1

@@ -12,7 +12,6 @@ class HockeyVideo:
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
         self.mouseX = 0
         self.mouseY = 0
-        self.frame.bind('<Motion>', self.getMousePos)
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
         self.separateFrames()  # Turns the video into a sequence of frames
@@ -77,6 +76,9 @@ class HockeyVideo:
         imgLabel = tk.Label(self.frame, image=frameImg)
         imgLabel.image = frameImg
         imgLabel.grid(row=0, column=0, padx=5, pady=5)
+        self.mouseX = 0
+        self.mouseY = 0
+        imgLabel.bind('<Button-1>', self.getMousePos)
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def dumpFrame(self):
