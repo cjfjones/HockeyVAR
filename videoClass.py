@@ -26,7 +26,7 @@ class HockeyVideo:
         self.isPaused = False
         self.videoEnded = False  # Ends video threading when True
         self.manualVARMode = False
-        self.VARStage = (0, 'right')
+        self.VARStage = [0, 'left']
         self.endStage = 10
         self.ballHistory = []
         self.ballCollisionPos = None
@@ -34,10 +34,7 @@ class HockeyVideo:
 
     def separateFrames(self):
         files = glob.glob('footage/*')
-        filesUnedited = glob.glob('footageUnedited/*')
         for f in files:
-            os.remove(f)  # Clears frame directory
-        for f in filesUnedited:
             os.remove(f)  # Clears frame directory
 
         vidObj = cv2.VideoCapture(self.path)
@@ -51,7 +48,6 @@ class HockeyVideo:
                 if count % self.frameJump == 0:
                     image = cv2.resize(image, (250, 250), interpolation=cv2.INTER_CUBIC)
                     cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
-                    cv2.imwrite(f'footageUnedited/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
                 print('End of video?')
@@ -59,28 +55,30 @@ class HockeyVideo:
     def displayFrames(self): # ONLY INVOKE AS THREAD
         comparisonFrameDifference = 10
         self.nextFrameDisplayTime = time.time()
+        clickLocation = None
         while True: # Thread: so while video exists, this always runs
             if self.videoEnded:
                 return  # When returned, the thread ends
             if not self.manualVARMode:
-                frameName = self.frames[self.frameNum//self.frameJump]
+                frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                 self.displayImageInFrame(frameName, 1, 0)
                 while self.speed == 0 or self.isPaused:
                     if self.videoEnded:
                         return  # When returned, the thread ends
-                    frameName = self.frames[self.frameNum // self.frameJump]
+                    frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(frameName, 1, 0)
 
                 self.nextFrameDisplayTime += (self.frameJump/self.fps)/self.speed
-                if self.nextFrameDisplayTime - time.time() > 0.01:  # Wait until time to show next frame
-                    time.sleep((self.nextFrameDisplayTime - time.time()) - 0.01)
+                if self.nextFrameDisplayTime - time.time() >= 0:  # Wait until time to show next frame
+                    time.sleep(self.nextFrameDisplayTime - time.time())
                 if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
                     time.sleep(1)
-                    self.VARStage = 'start'
+                    self.isPaused = True
+                    self.VARStage = [0, 'left']
                     self.manualVARMode = True
-                    self.frameNum -= round(comparisonFrameDifference/self.frameJump)*self.frameJump
-                    frameName = self.frames[self.frameNum // self.frameJump]
-                elif self.frameNum + self.frameJump <= self.lastFrame:
+                    self.frameNum -= comparisonFrameDifference/2
+                    frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
                     self.frameNum += self.frameJump
                 else:  # End of video
                     self.dumpFrame()
@@ -89,49 +87,31 @@ class HockeyVideo:
             if self.manualVARMode:
                 self.displayImageInFrame(frameName, 1, 0)
                 if self.VARStage[0] < self.endStage:
-                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]} of the ball.')
+                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
                     self.VARInstructionLabel.grid(row=0, column=1)
                     if self.mouseX != None and self.mouseY != None:
-                        # TODO: Select ball right, change VARStage, select ball left, increment by max stage
-
-                        pass
-                        '''
-                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
-                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
-                                                     center=self.ballHistory[-1][1], radius=10,
-                                                     color=(0, 255, 0), thickness=3)
-                        cv2.imwrite(frameName, imageWithCircle)
-                        self.mouseX = None
-                        self.mouseY = None
-                        self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
-                        frameName = self.frames[self.frameNum // self.frameJump]
-                        self.VARStage = 'collision'
-                        '''
-                if self.VARStage == 'collision':
-                    if self.mouseX != None and self.mouseY != None:
-                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
-                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
-                                                     center=self.ballHistory[-1][1], radius=10,
-                                                     color=(0, 255, 0), thickness=3)
-                        cv2.imwrite(frameName, imageWithCircle)
-                        self.mouseX = None
-                        self.mouseY = None
-                        self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
-                        frameName = self.frames[self.frameNum // self.frameJump]
-                        self.VARStage = 'end'
-                if self.VARStage == 'end':
-                    if self.mouseX != None and self.mouseY != None:
-                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
-                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
-                                                     center=self.ballHistory[-1][1], radius=10,
-                                                     color=(0, 255, 0), thickness=3)
-                        cv2.imwrite(frameName, imageWithCircle)
-                        self.mouseX = None
-                        self.mouseY = None
-                        self.VARStage = 'display'
-                if self.VARStage == 'display':
+                        if self.VARStage[1] == 'left':
+                            clickLocation = (self.mouseX, self.mouseY)
+                            self.mouseX = None
+                            self.mouseY = None
+                            self.VARStage[1] = 'right'
+                        elif self.VARStage[1] == 'right':
+                            self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], ((clickLocation[0]+self.mouseX)//2, self.mouseY), abs(self.mouseX-clickLocation[0])//2))
+                            imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
+                                                         center=self.ballHistory[-1][1], radius=self.ballHistory[-1][2],
+                                                         color=(0, 255, 0), thickness=3)
+                            cv2.imwrite(frameName, imageWithCircle)
+                            self.mouseX = None
+                            self.mouseY = None
+                            self.VARStage[0] += 1
+                            self.VARStage[1] = 'left'
+                            if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
+                                self.frameNum += comparisonFrameDifference/self.endStage
+                                frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                else:
                     self.manualVARMode = False
-                    self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
+                    if self.frameNum + self.frameJump <= self.lastFrame:
+                        self.frameNum += comparisonFrameDifference
 
 
     def displayImageInFrame(self, frameName, row, column):

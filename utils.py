@@ -7,6 +7,8 @@ import numpy as np
 import random
 from PIL import ImageTk, Image
 
+def roundToNearest(num, base):
+    return round(num/base)*base
 
 def openImage(path):
     image = Image.open(path)
