@@ -8,9 +8,14 @@ import random
 from PIL import ImageTk, Image
 
 
+def openImage(path):
+    image = Image.open(path)
+    image = ImageTk.PhotoImage(image)
+    return image
+
 def openImageResize(path, size):
     image = Image.open(path)
-    image = image.resize(size)
+    image.resize(size)
     image = ImageTk.PhotoImage(image)
     return image
 

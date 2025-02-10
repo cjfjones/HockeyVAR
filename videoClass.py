@@ -26,14 +26,18 @@ class HockeyVideo:
         self.isPaused = False
         self.videoEnded = False  # Ends video threading when True
         self.manualVARMode = False
-        self.VARStage = 'start'
-        self.ballStartPos = None
+        self.VARStage = (0, 'right')
+        self.endStage = 10
+        self.ballHistory = []
         self.ballCollisionPos = None
         self.ballEndPos = None
 
     def separateFrames(self):
         files = glob.glob('footage/*')
+        filesUnedited = glob.glob('footageUnedited/*')
         for f in files:
+            os.remove(f)  # Clears frame directory
+        for f in filesUnedited:
             os.remove(f)  # Clears frame directory
 
         vidObj = cv2.VideoCapture(self.path)
@@ -45,7 +49,9 @@ class HockeyVideo:
             try:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
+                    image = cv2.resize(image, (250, 250), interpolation=cv2.INTER_CUBIC)
                     cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
+                    cv2.imwrite(f'footageUnedited/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
                 print('End of video?')
@@ -58,12 +64,12 @@ class HockeyVideo:
                 return  # When returned, the thread ends
             if not self.manualVARMode:
                 frameName = self.frames[self.frameNum//self.frameJump]
-                self.displayImageInFrame(frameName, 250, 250, 1, 0)
+                self.displayImageInFrame(frameName, 1, 0)
                 while self.speed == 0 or self.isPaused:
                     if self.videoEnded:
                         return  # When returned, the thread ends
                     frameName = self.frames[self.frameNum // self.frameJump]
-                    self.displayImageInFrame(frameName, 250, 250, 1, 0)
+                    self.displayImageInFrame(frameName, 1, 0)
 
                 self.nextFrameDisplayTime += (self.frameJump/self.fps)/self.speed
                 if self.nextFrameDisplayTime - time.time() > 0.01:  # Wait until time to show next frame
@@ -78,23 +84,36 @@ class HockeyVideo:
                     self.frameNum += self.frameJump
                 else:  # End of video
                     self.dumpFrame()
-                    self.displayImageInFrame(frameName, 250, 250, 1, 0)
+                    self.displayImageInFrame(frameName, 1, 0)
                     self.isPaused = True
             if self.manualVARMode:
-                self.displayImageInFrame(frameName, 250, 250, 1, 0)
-                if self.VARStage == 'start':
-                    self.VARInstructionLabel = tk.Label(self.root, text='Please select the centre of the ball.')
+                self.displayImageInFrame(frameName, 1, 0)
+                if self.VARStage[0] < self.endStage:
+                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]} of the ball.')
                     self.VARInstructionLabel.grid(row=0, column=1)
                     if self.mouseX != None and self.mouseY != None:
-                        self.ballStartPos = (self.mouseX, self.mouseY)
+                        # TODO: Select ball right, change VARStage, select ball left, increment by max stage
+
+                        pass
+                        '''
+                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
+                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
+                                                     center=self.ballHistory[-1][1], radius=10,
+                                                     color=(0, 255, 0), thickness=3)
+                        cv2.imwrite(frameName, imageWithCircle)
                         self.mouseX = None
                         self.mouseY = None
                         self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
                         frameName = self.frames[self.frameNum // self.frameJump]
                         self.VARStage = 'collision'
+                        '''
                 if self.VARStage == 'collision':
                     if self.mouseX != None and self.mouseY != None:
-                        self.ballStartPos = (self.mouseX, self.mouseY)
+                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
+                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
+                                                     center=self.ballHistory[-1][1], radius=10,
+                                                     color=(0, 255, 0), thickness=3)
+                        cv2.imwrite(frameName, imageWithCircle)
                         self.mouseX = None
                         self.mouseY = None
                         self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
@@ -102,7 +121,11 @@ class HockeyVideo:
                         self.VARStage = 'end'
                 if self.VARStage == 'end':
                     if self.mouseX != None and self.mouseY != None:
-                        self.ballStartPos = (self.mouseX, self.mouseY)
+                        self.ballHistory.append((self.frames[self.frameNum // self.frameJump], (self.mouseX, self.mouseY)))
+                        imageWithCircle = cv2.circle(img=cv2.imread(self.ballHistory[-1][0]),
+                                                     center=self.ballHistory[-1][1], radius=10,
+                                                     color=(0, 255, 0), thickness=3)
+                        cv2.imwrite(frameName, imageWithCircle)
                         self.mouseX = None
                         self.mouseY = None
                         self.VARStage = 'display'
@@ -111,9 +134,9 @@ class HockeyVideo:
                     self.frameNum += round(comparisonFrameDifference/self.frameJump)*self.frameJump
 
 
-    def displayImageInFrame(self, frameName, width, height, row, column):
+    def displayImageInFrame(self, frameName, row, column):
         self.frame.configure(bg='green' if utils.extractConfidenceVal(frameName) == 0 else 'red')
-        frameImg = utils.openImageResize(frameName, (width, height))
+        frameImg = utils.openImage(frameName)
         imgLabel = tk.Label(self.frame, image=frameImg)
         imgLabel.image = frameImg
         imgLabel.grid(row=0, column=0, padx=5, pady=5)
