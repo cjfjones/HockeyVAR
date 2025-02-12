@@ -1,3 +1,5 @@
+import copy
+
 import cv2
 import os
 import glob
@@ -12,6 +14,8 @@ class HockeyVideo:
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
+        self.lastImage = None
+        self.currentImage = None
         self.mouseX = None
         self.mouseY = None
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
@@ -53,7 +57,7 @@ class HockeyVideo:
                 print('End of video?')
 
     def displayFrames(self): # ONLY INVOKE AS THREAD
-        comparisonFrameDifference = 3
+        comparisonFrameDifference = 12
         self.nextFrameDisplayTime = time.time()
         clickLocation = None
         while True: # Thread: so while video exists, this always runs
@@ -84,7 +88,6 @@ class HockeyVideo:
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
                     self.frameNum += self.frameJump
                 else:  # End of video
-                    self.dumpFrame()
                     self.displayImageInFrame(1, 0, frameName=frameName)
                     self.isPaused = True
             if self.manualVARMode:
@@ -108,17 +111,17 @@ class HockeyVideo:
                                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                                     if utils.extractConfidenceVal(frameName) != 0:
                                         self.ballCollisionPos = self.ballHistory[-1][1]
-                            self.displayVARImage()
+                            self.displayVARImage(frameName)
                 else:
+                    self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
                     if self.frameNum + self.frameJump <= self.lastFrame:
                         self.frameNum += comparisonFrameDifference
-                    self.dumpFrame()
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(1, 0, frameName=frameName)
 
-    def displayVARImage(self):
-        image = cv2.imread(self.ballHistory[-1][0])
+    def displayVARImage(self, frameName):
+        image = cv2.imread(frameName)
         for pos in self.ballHistory:
             cv2.circle(img=image, center=pos[1], radius=pos[2], color=(0, 255, 0), thickness=3)
         self.displayImageInFrame(1, 0, image=image)
@@ -130,20 +133,15 @@ class HockeyVideo:
         else:
             frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
             self.frame.configure(bg='red')
-        imgLabel = tk.Label(self.frame, image=frameImg)
-        imgLabel.image = frameImg
-        imgLabel.grid(row=0, column=0, padx=5, pady=5)
-        imgLabel.bind('<Button-1>', self.getMousePos)
+        if self.lastImage != None:
+            self.lastImage.destroy()
+        if self.currentImage != None:
+            self.lastImage = self.currentImage
+        self.currentImage = tk.Label(self.frame, image=frameImg)
+        self.currentImage.image = frameImg
+        self.currentImage.grid(row=0, column=0, padx=5, pady=5)
+        self.currentImage.bind('<Button-1>', self.getMousePos)
         self.frame.grid(row=row, column=column, columnspan=6)
-
-## TODO: REFACTOR WHOLE FRAME SYSTEM, try 2 images, (current, last), each current image can destroy the last one, then transfer the current to the last, then assign new image to current
-crash so i remember to do this
-
-
-    def dumpFrame(self):
-        self.displayImage
-        self.frame.destroy()  # Removes pointless frames
-        self.frame = tk.Frame(self.root)
 
     def getMousePos(self, event):
         if self.manualVARMode:
