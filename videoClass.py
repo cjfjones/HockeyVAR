@@ -8,7 +8,7 @@ import tkinter as tk
 from PIL import ImageTk, Image
 
 class HockeyVideo:
-    def __init__(self, root, path, frameJump=1):
+    def __init__(self, root, path, frameJump=1, debug=False):
         self.root = root  # Tkinter window
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
@@ -19,7 +19,8 @@ class HockeyVideo:
         self.mouseY = None
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
-        self.separateFrames()  # Turns the video into a sequence of frames
+        if not debug:
+            self.separateFrames()  # Turns the video into a sequence of frames
         utils.tempClassifyFramesRand()  # Randomly assigns values to the frames (no model working yet)
         self.frames = glob.glob('footage/*')  # Creates a list of frame paths
         self.frames.sort(key=utils.extractFrameNum)  # Sorts into order
