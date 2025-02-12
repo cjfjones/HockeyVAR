@@ -1,5 +1,4 @@
 import copy
-
 import cv2
 import os
 import glob
@@ -112,6 +111,9 @@ class HockeyVideo:
                                     if utils.extractConfidenceVal(frameName) != 0:
                                         self.ballCollisionPos = self.ballHistory[-1][1]
                             self.displayVARImage(frameName)
+                        self.VARInstructionLabel = tk.Label(self.root,
+                                                            text=f'Please select the {self.VARStage[1]}-most point of the ball.')
+                        self.VARInstructionLabel.grid(row=0, column=1)
                 else:
                     self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
@@ -144,10 +146,10 @@ class HockeyVideo:
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def getMousePos(self, event):
+        print(self.frameNum)
         if self.manualVARMode:
             self.mouseX = event.x
             self.mouseY = event.y
-            print(event.x, event.y)
 
     def endManualVAR(self, event):
         self.manualVARMode = False

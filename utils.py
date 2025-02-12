@@ -45,9 +45,31 @@ def loadModel():
         model = pickle.load(f)
     return model
 
+frames = [93,
+258,
+447,
+798,
+870,
+1005,
+1434,
+1548,
+1596,
+1713,
+1773,
+2025,
+2361,
+2442,
+2622,
+2823,
+2892,
+3006]
+
 def tempClassifyFramesRand():
     for imagePath in glob.glob('footage/*'):
-        if '75' in imagePath:
-            os.rename(imagePath, imagePath.replace('predval', '1'))
-        else:
+        changed = False
+        for frame in frames:
+            if str(frame) in imagePath:
+                os.rename(imagePath, imagePath.replace('predval', '1'))
+                changed = True
+        if not changed:
             os.rename(imagePath, imagePath.replace('predval', '0'))
