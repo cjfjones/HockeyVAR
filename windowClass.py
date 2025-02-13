@@ -256,7 +256,7 @@ class hockeyTkinterWindow:
     def processVideo(self):
         frameJump = 3
         filename = fd.askopenfilename()
-        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump)
+        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
         # classifyFrames() # todo: test when model not corrupted
         utils.tempClassifyFramesRand()
         displayThread = threading.Thread(target=self.video.displayFrames)
