@@ -31,7 +31,7 @@ class HockeyVideo:
         self.isPaused = False
         self.videoEnded = False  # Ends video threading when True
         self.manualVARMode = False
-        self.VARStage = [0, 'left']
+        self.VARStage = 0
         self.endStage = 5
         self.ballHistory = []
         self.ballCollisionPos = None
@@ -78,11 +78,11 @@ class HockeyVideo:
                 if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
                     time.sleep(1)
                     self.isPaused = True
-                    self.VARStage = [0, 'left']
+                    self.VARStage = 0
                     self.manualVARMode = True
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
+                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the centre of the ball.')
                     self.VARInstructionLabel.grid(row=0, column=1)
                     self.displayImageInFrame(1, 0, frameName=frameName)
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
@@ -91,30 +91,20 @@ class HockeyVideo:
                     self.displayImageInFrame(1, 0, frameName=frameName)
                     self.isPaused = True
             if self.manualVARMode:
-                if self.VARStage[0] < self.endStage:
+                if self.VARStage < self.endStage:
                     if self.mouseX != None and self.mouseY != None:
-                        if self.VARStage[1] == 'left':
-                            clickLocation = (self.mouseX, self.mouseY)
-                            self.mouseX = None
-                            self.mouseY = None
-                            self.VARStage[1] = 'right'
-                        elif self.VARStage[1] == 'right':
-                            self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], ((clickLocation[0]+self.mouseX)//2, self.mouseY), abs(self.mouseX-clickLocation[0])//2))
-                            frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                            self.mouseX = None
-                            self.mouseY = None
-                            self.VARStage[0] += 1
-                            self.VARStage[1] = 'left'
-                            while frameName == self.ballHistory[-1][0] or frameName == None:
-                                if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
-                                    self.frameNum += comparisonFrameDifference/self.endStage
-                                    frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                                    if utils.extractConfidenceVal(frameName) != 0:
-                                        self.ballCollisionPos = self.ballHistory[-1][1]
-                            self.displayVARImage(frameName)
-                        self.VARInstructionLabel = tk.Label(self.root,
-                                                            text=f'Please select the {self.VARStage[1]}-most point of the ball.')
-                        self.VARInstructionLabel.grid(row=0, column=1)
+                        self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], (self.mouseX, self.mouseY), 5))
+                        frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                        self.mouseX = None
+                        self.mouseY = None
+                        self.VARStage += 1
+                        while frameName == self.ballHistory[-1][0] or frameName == None:
+                            if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
+                                self.frameNum += comparisonFrameDifference/self.endStage
+                                frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                                if utils.extractConfidenceVal(frameName) != 0:
+                                    self.ballCollisionPos = self.ballHistory[-1][1]
+                        self.displayVARImage(frameName)
                 else:
                     self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
